@@ -32,7 +32,9 @@ class AliDns
 			$this->domain = $matches[1][0];
 		} elseif (preg_match_all("/.*\.(\w+?\.\w+)/is", $domain, $matches)) {
 			$this->domain = $matches[1][0];
-		} else {
+		}  elseif (preg_match("/^\w+?\.\w+$/is", $domain)) {
+            $this->domain = $domain;
+        } else {
 			return false;
 		}
 
@@ -145,10 +147,11 @@ class AliDns
 					$success = true;
 				}
 				$cnt++;
+				sleep(1);
 			} while ($success != true && $cnt < 3);
 		}
 
-		return true;
+		return $success;
 	}
 
 	/*
@@ -166,19 +169,28 @@ class AliDns
 			'Value' => $value,
 		];
 
-		$signature = $this->getSinagure($selfParams);
+		$success = false;
+		$cnt = 0;
 
-		$post = array_merge($this->getCommonParams(), $selfParams, ['Signature' => $signature]);
+		do {
 
-		$ret = $this->httpClient(self::ALI_NDS_URI .'?' .http_build_query($post));
-		
-		$jsonData = $this->dealHttpResponse($ret);
+			$signature = $this->getSinagure($selfParams);
 
-		if ($jsonData && isset($jsonData['RecordId'])) {
-			return true;
-		}
+			$post = array_merge($this->getCommonParams(), $selfParams, ['Signature' => $signature]);
 
-		return false;
+			$ret = $this->httpClient(self::ALI_NDS_URI .'?' .http_build_query($post));
+			
+			$jsonData = $this->dealHttpResponse($ret);
+
+			if ($jsonData && isset($jsonData['RecordId'])) {
+				$success = true;
+			}
+
+			$cnt++;
+			sleep(1);
+		} while ($success != true && $cnt < 3);
+
+		return $success;
     }
 
     /*
