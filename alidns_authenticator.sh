@@ -1,84 +1,20 @@
 #!/bin/bash
 
-# Get your API key from https://ram.console.aliyun.com/#/user/list (RECOMMAND)
-# OR from https://usercenter.console.aliyun.com/#/manage/ak (NOT RECOMMAND)
+SCRIPT_PWD=`/usr/bin/dirname $0`
+PHPCMD='/usr/bin/php'
+PHP_FILE=$SCRIPT_PWD"/alidns_certbot.php"
 
-# Constant
-ACCESSKEYID=''
-ACCESSKEYSECRTE=''
-ALIDNSURI='https://alidns.aliyuncs.com/'
+# see https://certbot.eff.org/docs/using.html#pre-and-post-validation-hooks
 
-# declare -A  定义关联数组 类似字典 键值对
-# Common parameters https://help.aliyun.com/document_detail/29745.html
-declare -A PARAMS
-PARAMS=( \
-	[Format]="json" \
-	[Version]="2015-01-09" \
-	[AccessKeyId]=$ACCESSKEYID \
-	[SignatureMethod]="HMAC-SHA1" \
-	[Timestamp]=`date -u +%Y-%m-%dT%H:%M:%SZ` \
-	[SignatureVersion]="1.0" \
-	[SignatureNonce]=`date +%s%N | md5sum |cut -c 1-9` \
-)
+# run php
+$PHPCMD -f $PHP_FILE "$CERTBOT_DOMAIN" "$CERTBOT_VALIDATION" 
 
-# get Domain
-function getDomain()
-{
-	if [[ -z $1 ]]; then
-		echo 'Domain empty'
-		exit 1
-	fi
+if [[ $? != '0' ]]; then
+	echo 'PHP run error'
+	exit 128
+fi
 
-	# Strip only the top domain to get the zone id
-	DOMAIN=$(expr match "$1" '.*\.\(.*\..*\)')
+echo 'PHP run success'
 
-	echo $DOMAIN
-}
-
-# get DNS list for the special domain
-# https://help.aliyun.com/document_detail/29776.html
-function getDNSList()
-{
-	if [[ -z $1 ]]; then
-		echo 'Domain empty'
-		exit 1
-	fi
-
-	declare -A TMP_PARAMS
-	TMP_PARAMS=( \
-		[Action]="DescribeDomainRecords" \
-		[DomainName]=$(getDomain $1) \
-		[PageNumber]=1 \
-		[PageSize]=100 \
-		[RRKeyWord]="%_acme-challenge%" \
-		# https://help.aliyun.com/document_detail/29805.html
-		[TypeKeyWord]="TXT" \
-	)
-
-	declare -A MERGE_PARAMS
-	#MERGE_PARAMS=PARAMS
-
-	MERGE_PARAMS["tttt"]=888 #$TMP_PARAMS
-	echo ${!MERGE_PARAMS[*]}
-}
-
-getDNSList www.miss77.net
-
-# Signature method https://help.aliyun.com/document_detail/29747.html
-# Signature
-
-function genSinature()
-{
-	declare -A SIGN_PARAMS
-	SIGN_PARAMS=$1
-	echo ${!SIGN_PARAMS[*]}
-}
-
-genSinature $PARAMS
-
-# 打印所有key
-echo ${!PARAMS[*]} | tr -t [" "] ["\n"] | sort | tr -t ["\n"] [" "]
-printf "\n"
-    
-# 打印所有value @ 和 * 同样的意思
-# echo ${PARAMS[@]}
+# wait dns valid
+sleep 30

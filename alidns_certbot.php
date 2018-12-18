@@ -69,7 +69,7 @@ class AliDns
 
 		$addRet = $this->addNewDNSRecore('_acme-challenge', $this->newDNSValue);
 
-		var_dump($this->getDomainRecordList());
+		// var_dump($this->getDomainRecordList());
 
 		return $addRet;
 	}
@@ -304,7 +304,7 @@ if ($argc < 3) {
 
 $aliDns = new AliDns();
 $aliDns->setDomain($argv[1]);
-$aliDns->setAccessInfo('', '');
+$aliDns->setAccessInfo('LTAIYpLRLKsPsI0l', 'tKVnZevhK4f9GBFzojZqfXxTUQSBMX');
 $aliDns->setNewValue($argv[2]);
 if ($aliDns->createDnsRecord()) {
 	exit(0);
