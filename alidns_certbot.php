@@ -28,11 +28,11 @@ class AliDns
 	{
 		$matches = [];
 
-		if (preg_match_all("/.*\.(\w+?\.(?:com|net|gov|org)\.cn)/is", $domain, $matches)) {
+		if (preg_match_all("/.*\.(\S+?\.(?:com|net|gov|org)\.cn)/is", $domain, $matches)) {
 			$this->domain = $matches[1][0];
-		} elseif (preg_match_all("/.*\.(\w+?\.\w+)/is", $domain, $matches)) {
+		} elseif (preg_match_all("/.*\.(\S+?\.\w+)/is", $domain, $matches)) {
 			$this->domain = $matches[1][0];
-		}  elseif (preg_match("/^\w+?\.\w+$/is", $domain)) {
+		}  elseif (preg_match("/^\S+?\.\w+$/is", $domain)) {
             $this->domain = $domain;
         } else {
 			return false;
@@ -63,6 +63,11 @@ class AliDns
      */
 	public function createDnsRecord()
 	{
+		var_dump($this-domain);
+		if (empty($this-domain)) {
+			return false;
+		}
+
 		$existRecords = $this->getDomainRecordList();
 
 		if ($existRecords) {
