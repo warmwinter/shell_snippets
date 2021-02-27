@@ -35,7 +35,11 @@ fi
 # 切换到源目录
 cd $SOURCE
 
-BEFORE_HASH='94ec375' # `$HASHCMD`
+if [ ! -z "$1" ]; then
+    BEFORE_HASH=${1:0:7}
+else
+    BEFORE_HASH=`$HASHCMD`
+fi
 $GIT pull --ff-only -q
 AFTER_HASH=`$HASHCMD`
 
@@ -43,10 +47,17 @@ if [ "$BEFORE_HASH" = "$AFTER_HASH" ]; then
     echo "目前还没有可更新的文件，请稍后再试"
     exit 0
 fi
+
+echo "差异："$BEFORE_HASH" ... "$AFTER_HASH
+
 # Select only files that are Added (A), Copied (C), Deleted (D),
 # Modified (M), Renamed (R), have their type (i.e. regular file, symlink, submodule, …​) changed (T), 
 # are Unmerged (U), are Unknown (X), or have had their pairing Broken (B). 
 SYNC_ITEMS=`$GIT diff --name-only --diff-filter=ACMRT $BEFORE_HASH $AFTER_HASH` # upload/
+
+# ${#array[@]} 
+SYNC_ARRAY=($SYNC_ITEMS)
+echo "差异文件数："${#SYNC_ARRAY[@]}
 
 echo '' > $LIST_FILE
 for item in $SYNC_ITEMS; do
@@ -55,18 +66,36 @@ for item in $SYNC_ITEMS; do
         continue
     fi
 
+    FILE_FULL=${item:7}
+
+    if [ "$FILE_FULL" = "install/index.php" ]; then
+        continue
+    fi
+
+    if [ "$FILE_FULL" = "install/update.php" ]; then
+        continue
+    fi
+
+    if [ "$FILE_FULL" = "uc_server/install/index.php" ]; then
+        continue
+    fi
+
+    if [ "$FILE_FULL" = "uc_server/install/update.php" ]; then
+        continue
+    fi
+
     # echo "+ "${item:6} >> $LIST_FILE
-    echo ${item:7} >> $LIST_FILE
+    echo "$FILE_FULL" >> $LIST_FILE
 done
-#echo '- *' >> $LIST_FILE
-#echo '- /install/index.php' >> $LIST_FILE
-#echo '- /install/update.php' >> $LIST_FILE
-#echo '- /uc_server/install/index.php' >> $LIST_FILE
-#echo '- /uc_server/install/update.php' >> $LIST_FILE
 
 cat $LIST_FILE
 
 # 同步
-rsync --files-from=$LIST_FILE --list-only -rltD --no-p --no-g --no-o -vPhu ${SOURCE}/upload/ ${DEST}/
+# -a = -rlptgoD
+rsync --files-from=$LIST_FILE -rltD --no-p --no-g --no-o -R -vPhu ${SOURCE}/upload/ ${DEST}/
 
 rm -rf $LIST_FILE
+
+echo "同步完成"
+
+exit 0
